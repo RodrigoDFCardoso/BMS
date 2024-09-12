@@ -1,8 +1,8 @@
 import utime
 from machine import Pin, SoftI2C, ADC, I2C
 from ssd1306 import SSD1306_I2C
-import framebuf
 import machine
+import neopixel
 
 dev = I2C(1, scl=Pin(3), sda=Pin(2))
 
@@ -62,10 +62,44 @@ print("I2C Configuration: "+str(i2c))                   # Display I2C config
 adc_vrx = ADC(Pin(26))
 adc_vry = ADC(Pin(27))
 
+# Número de LEDs na sua matriz 5x5
+NUM_LEDS = 25
+
+# Inicializar a matriz de NeoPixels no GPIO7
+np = neopixel.NeoPixel(Pin(7), NUM_LEDS)
+
+# Definindo a matriz de LEDs
+LED_MATRIX = [
+    [24, 23, 22, 21, 20],
+    [15, 16, 17, 18, 19],
+    [14, 13, 12, 11, 10],
+    [5, 6, 7, 8, 9],
+    [4, 3, 2, 1, 0]
+]
+
+# definir cores para os LEDs
+RED = (50, 0, 0)
+ORANGE = (255, 165, 0)
+GREEN = (0, 50, 0)
+BLUE = (0, 0, 50)
+YELLOW = (30, 30, 0)
+#MAGENTA = (30, 0, 30)
+#CYAN = (0, 30, 30)
+#WHITE = (25, 25, 25)
+BLACK = (0, 0, 0)
+
+def LED_all(COLOR):
+    for i in range(len(np)):
+        np[i] = COLOR
+    np.write()
+
+#LED_all(CYAN)
+
 oled.text("ADC: ",1,8)
 
 
 x = 0
+color = BLACK
 
 while True:
     for i in range(4):
@@ -89,6 +123,17 @@ while True:
             else:
                 x += 1
         
+        if voltage_temp(readValueFrom(x))[1] < 20:
+            color = BLUE
+        if 20 < voltage_temp(readValueFrom(x))[1] < 35:
+            color = GREEN
+        if 35 < voltage_temp(readValueFrom(x))[1] < 50:
+            color = YELLOW
+        if 50 < voltage_temp(readValueFrom(x))[1] < 65:
+            color = ORANGE
+        if voltage_temp(readValueFrom(x))[1] > 65:
+            color = RED
+        
         # Clear the oled display in case it has junk on it.
         oled.fill(0)
         
@@ -109,6 +154,8 @@ while True:
     
         oled.text("Temp: ",0,48)
         oled.text(str("{:.2f} C".format(voltage_temp(readValueFrom(x))[1])),72,48)
+        
+        LED_all(color)
         
         # Finally update the oled display so the image & text is displayed
         oled.show()
